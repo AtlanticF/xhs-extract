@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY . .
 
+RUN sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources
+
 # 安装 puppeteer/chrome 运行所需依赖
 RUN apt-get update && \
     apt-get install -y \
