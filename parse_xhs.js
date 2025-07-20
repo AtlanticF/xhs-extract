@@ -28,7 +28,7 @@ class XhsClient {
     const a1 = this.getA1FromCookie();
     console.log(`[签名服务] 请求开始: noteId=${noteId}`);
     const signStart = Date.now();
-    const signResp = await axios.post('http://localhost:3001/api/xhs/sign', {
+    const signResp = await axios.post('http://sign_service:3001/api/xhs/sign', {
       uri,
       data,
       a1
@@ -66,11 +66,53 @@ async function getCookieWithA1() {
   // 原始cookie字符串（a1值可随意，后面会替换）
   let cookie = 'a1=xxxx; webId=41274e290eb75cf0dc5a0700e73ea402; gid=yjq84JDJyDvWyjq84JDyfJiU0fuUCxSVEjhMy4A7IK0EF288FF6Kqq888qy2YK28fdS2qd0W; customerClientId=052308199802510; abRequestId=41274e290eb75cf0dc5a0700e73ea402; x-user-id-creator.xiaohongshu.com=6534ea710000000004008adb; x-user-id-school.xiaohongshu.com=6534ea710000000004008adb; x-user-id-chengfeng.xiaohongshu.com=6534ea710000000004008adb; x-user-id-fuwu.xiaohongshu.com=6534ea710000000004008adb; timestamp2=17327615622290744b171fecebaa376d1b62c195a96b1b9eb3cad2260962819; timestamp2.sig=RMMliP0Lhuz4j_rrYauTmvAsaNa5L-lHSs0JPe-PxyY; x-user-id-pro.xiaohongshu.com=6534ea710000000004008adb; x-user-id-ark.xiaohongshu.com=6534ea710000000004008adb; access-token-ark.xiaohongshu.com=customer.ark.AT-68c517517105393042468991zju01pgd1qlwkmaj; webBuild=4.72.0; web_session=040069b440a93942da8d7788453a4bc51cb994; xsecappid=xhs-pc-web; unread={%22ub%22:%22684e974b000000002202baeb%22%2C%22ue%22:%226870a227000000001c031995%22%2C%22uc%22:24}; websectiga=6169c1e84f393779a5f7de7303038f3b47a78e47be716e7bec57ccce17d45f99; sec_poison_id=b5e036a4-53bd-43e2-bf56-af01407a82cb; acw_tc=0a50887c17523289428773120e5fe439644c3d2079d04aa8a01a59d7f3225d; loadts=1752329155964';
   // 获取最新a1
-  const a1Resp = await axios.get('http://localhost:3001/a1');
+  const a1Resp = await axios.get('http://sign_service:3001/a1');
   const a1 = a1Resp.data.a1;
   // 替换cookie中的a1
   cookie = cookie.replace(/a1=[^;]*/, 'a1=' + a1);
   return cookie;
+}
+
+ // 提取noteId和xsec_token
+ async function extractNoteIdAndToken(text) {
+  if (typeof text !== 'string') text = String(text || '');
+  // 先查找 item 直链
+  const urlMatch = text.match(/xiaohongshu\.com\/discovery\/item\/([0-9a-zA-Z]+)/);
+  let noteId = null, xsecToken = null;
+  if (urlMatch) {
+      noteId = urlMatch[1];
+      const url = urlMatch[0];
+      const tokenMatch = url.match(/[?&]xsec_token=([^&#]+)/);
+      xsecToken = tokenMatch ? tokenMatch[1] : null;
+      return [noteId, xsecToken];
+  }
+  // 查找 xhslink.com 短链
+  const shortMatch = text.match(/https?:\/\/xhslink\.com\/\S+/);
+  if (shortMatch) {
+      const shortUrl = shortMatch[0];
+      try {
+          const resp = await axios.get(shortUrl, { maxRedirects: 5, timeout: 10000 });
+          const realUrl = resp.request.res.responseUrl || resp.request._redirectable._currentUrl;
+          const urlMatch2 = realUrl.match(/xiaohongshu\.com\/discovery\/item\/([0-9a-zA-Z]+)/);
+          if (urlMatch2) {
+              noteId = urlMatch2[1];
+              const tokenMatch = realUrl.match(/[?&]xsec_token=([^&#]+)/);
+              xsecToken = tokenMatch ? tokenMatch[1] : null;
+              return [noteId, xsecToken];
+          }
+      } catch (e) {
+          return [null, null];
+      }
+  }
+  return [null, null];
+}
+
+function extractTextParam(text) {
+  if (typeof text === 'string') return text;
+  if (typeof text === 'object' && text !== null) {
+    return Object.keys(text)[0];
+  }
+  return '';
 }
 
 (async () => {
@@ -78,10 +120,21 @@ async function getCookieWithA1() {
   const xhs = new XhsClient({ cookie });
 
   // 路由：获取小红书笔记详情
-  app.get('/api/xhs/note', async (req, res) => {
-    //const { noteId, xsecToken } = req.query;
-    let noteId = '6853728100000000100115d2';
-    let xsecToken = 'CBiXaPQ7DY49hi1A5zx8NHkwMtYfnroV4EAzSgel2N0Tc=';
+  app.post('/api/xhs/note', async (req, res) => {
+    // 1. 获取 text 参数
+    let textParam = req.body.text;
+
+    // 2. 兼容对象格式（如小红书复制内容那种情况）
+    if (typeof textParam === 'object' && textParam !== null) {
+      textParam = Object.keys(textParam)[0];
+    }
+    if (typeof textParam !== 'string') textParam = '';
+
+
+    const [noteId, xsecToken] = await extractNoteIdAndToken(textParam);
+    if (!noteId) return { error: '未获取到noteId' };
+    //let noteId = '687bba860000000011000f3b';
+    //let xsecToken = 'CBLmUd51SdEpsB-oOyLv7KTJ1IYJ3_h7-gXN6PUM7JyeA=';
     const reqStart = Date.now();
     console.log(`[API] /api/xhs/note 请求开始: noteId=${noteId}`);
     if (!noteId || !xsecToken) {
@@ -105,5 +158,3 @@ async function getCookieWithA1() {
 })();
 
 module.exports = XhsClient;
-
-

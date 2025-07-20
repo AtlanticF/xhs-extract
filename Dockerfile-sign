@@ -33,4 +33,4 @@ RUN npm config set registry https://registry.npmmirror.com/
 
 RUN npm install
 
-CMD ["node", "parse_xhs.js"]
+CMD ["node", "sign_service.js"]
