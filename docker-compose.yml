@@ -3,7 +3,7 @@ services:
   sign_service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-sign
     container_name: sign_service
     command: node sign_service.js
     ports:
