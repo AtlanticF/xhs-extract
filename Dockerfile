@@ -1,0 +1,36 @@
+FROM --platform=linux/amd64 node:22.17
+
+WORKDIR /app
+
+COPY . .
+
+# 安装 puppeteer/chrome 运行所需依赖
+RUN apt-get update && \
+    apt-get install -y \
+    wget \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# 设置 npm 源为阿里云
+RUN npm config set registry https://registry.npmmirror.com/
+
+RUN npm install
+
+CMD ["node", "sign_service.js"]
