@@ -5,7 +5,7 @@ WORKDIR /app
 COPY . .
 
 ARG PUPPETEER_CHROME_DOWNLOAD_BASE_URL=https://cdn.npmmirror.com/binaries/chrome-for-testing
-ARG PUPPETEER_CHROME_DOWNLOAD_VERSION=https://cdn.npmmirror.com/binaries/chrome-for-testing
+ARG PUPPETEER_CHROME_HEADLESS_DOWNLOAD_BASE_URL=https://cdn.npmmirror.com/binaries/chrome-for-testing
 
 RUN sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources
 
@@ -34,7 +34,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ENV PUPPETEER_CHROME_DOWNLOAD_BASE_URL=$PUPPETEER_CHROME_DOWNLOAD_BASE_URL \
-    PUPPETEER_CHROME_DOWNLOAD_VERSION=$PUPPETEER_CHROME_DOWNLOAD_VERSION \
+    PUPPETEER_CHROME_HEADLESS_DOWNLOAD_BASE_URL=$PUPPETEER_CHROME_HEADLESS_DOWNLOAD_BASE_URL \
 # 设置 npm 源为阿里云
 RUN npm config set registry https://registry.npmmirror.com/
 
