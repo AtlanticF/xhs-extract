@@ -1,8 +1,6 @@
 services:
   sign_service:
-    build:
-      context: .
-      dockerfile: Dockerfile-sign
+    image: xhs-extract-sign_service:latest
     container_name: sign_service
     command: node sign_service.js
     ports:
@@ -11,9 +9,7 @@ services:
       - .:/app
 
   parse_xhs:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: xhs-extract-parse_xhs:latest
     container_name: parse_xhs
     command: node parse_xhs.js
     ports:

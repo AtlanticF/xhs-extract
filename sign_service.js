@@ -24,7 +24,7 @@ async function initBrowser() {
     await page.goto('https://www.xiaohongshu.com', { waitUntil: 'networkidle2', timeout: 60000 });
     console.log('访问小红书官网成功');
     await new Promise(resolve => setTimeout(resolve, 5000));
-    await page.reload({ waitUntil: 'networkidle2' });
+    await page.reload({ waitUntil: 'networkidle2', timeout: 300000 });
     const cookies = await page.cookies();
     const a1Cookie = cookies.find(c => c.name === 'a1');
     if (a1Cookie) {
